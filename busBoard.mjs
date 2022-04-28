@@ -4,6 +4,9 @@ const apiKey = "";
 const stopID = "490008660N";
 const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals?app_key=${apiKey}`;
 
-fetch(url)
-  .then((response) => response.json())
-  .then((body) => console.log(body));
+const response = await fetch(url);
+const arrivals = await response.json();
+
+arrivals.forEach((busArrival) => {
+  console.log(busArrival);
+});
