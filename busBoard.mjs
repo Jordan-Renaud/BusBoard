@@ -2,51 +2,57 @@ import fetch from "node-fetch";
 import readLine from "readline";
 
 const stopID = "490008660N";
-const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals`;
 
-const response = await fetch(url);
-const arrivals = await response.json();
+async function getBusInfoFor(stopID) {
+  const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals`;
+  const response = await fetch(url);
+  const busInfo = await response.json();
 
-//sort arrivals with time to station
-arrivals.sort((a, b) => a.timeToStation - b.timeToStation);
+  return busInfo;
+}
 
-arrivals.forEach((busArrival) => {
-  const minutesUntilBusArrives = Math.floor(busArrival.timeToStation / 60);
+function logBusArrivalTimes(busInfo) {
+  arrivals.sort((a, b) => a.timeToStation - b.timeToStation);
 
-  if (minutesUntilBusArrives === 0) {
-    console.log(`Bus to ${busArrival.destinationName} is due.`);
-  } else {
-    console.log(
-      `Bus to ${busArrival.destinationName} arriving in ${minutesUntilBusArrives} minutes.`
-    );
-  }
-});
+  arrivals.forEach((busArrival) => {
+    const minutesUntilBusArrives = Math.floor(busArrival.timeToStation / 60);
+
+    if (minutesUntilBusArrives === 0) {
+      console.log(`Bus to ${busArrival.destinationName} is due.`);
+    } else {
+      console.log(
+        `Bus to ${busArrival.destinationName} arriving in ${minutesUntilBusArrives} minutes.`
+      );
+    }
+  });
+}
+
+async function getPostcodeData(postcode) {
+  const urlForPostCodeRequest = `https://api.postcodes.io/postcodes/${postcode}`;
+  const input = await fetch(urlForPostCodeRequest);
+  const postcodeData = await input.json();
+
+  return postcodeData;
+}
 
 const rl = readLine.createInterface({
   input: process.stdin,
   output: process.stdout,
 });
 
-let postcode;
-
 rl.question("What is your postcode? ", function (answer) {
-  console.log(`Postcode confirmation: ${answer}`);
-  postcode = answer;
-  getPostcodeData(postcode);
+  //TODO: potentially do some error handling here
+  const postcode = answer.toLocaleUpperCase().trim();
+  const postcodeData = getPostcodeData(postcode);
+
+  const postcodeLocation = {
+    longitude: postcodeData.result.longitude,
+    latitude: postcodeData.result.latitude,
+  };
+
+  console.log(postcodeLocation);
   rl.close();
 });
-
-function getPostcodeData(postcode) {
-  const urlForPostCodeRequest = `https://api.postcodes.io/postcodes/${postcode}`;
-  const input = await fetch(urlForPostCodeRequest);
-  const postcodeData = await input.json();
-  return postcodeData;
-}
-
-
-//current errors
-//we need to wait for user to put in postcode.
-//
 
 //get users input for postcode
 //remove any spaces + captilise it
@@ -56,4 +62,5 @@ function getPostcodeData(postcode) {
 //validate => if status 404 then inform user
 //retrieve longitude + latitude
 //coords for testing = lat = 51.55411 long = -0.292968
-// url for bus stops within long + lat = https://api.tfl.gov.uk/StopPoint/?lat={lat}&lon={lon}&stopTypes={stopTypes}[&radius][&useStopPointHierarchy][&modes][&categories][&returnLines]
+// url for bus stops within long + lat = https://api.tfl.gov.uk/StopPoint/?lat={lat}&lon={lon}&stopTypes={stopTypes}[&radius]
+//stop typpes = look for NaptanId watch for children (stop on either side of the road)
