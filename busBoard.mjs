@@ -12,6 +12,9 @@ async function getBusInfoFor(stopID) {
 }
 
 function logBusArrivalTimes(busInfo) {
+  console.log(busInfo);
+  const arrivals = busInfo;
+
   arrivals.sort((a, b) => a.timeToStation - b.timeToStation);
 
   arrivals.forEach((busArrival) => {
@@ -42,11 +45,22 @@ async function getCloseStopIDS(coords) {
   return await stopsIdAPI.json();
 }
 
-function sortPostcodeData(postcodeJSON) {
+function sortBusStopData(postcodeJSON) {
   const stopIDs = postcodeJSON.stopPoints;
-  stopIDs.forEach((stop) => console.log(stop.naptanId));
+  const busStopInfo = [];
 
-  return "STOP Id information here";
+  stopIDs.forEach((stop) => {
+    busStopInfo.push({
+      id: stop.naptanId,
+      distance: Math.floor(stop.distance),
+    });
+  });
+
+  busStopInfo.sort((a, b) => {
+    return a.distance - b.distance;
+  });
+
+  return busStopInfo.slice(0, 2);
 }
 
 const rl = readLine.createInterface({
@@ -65,9 +79,15 @@ rl.question("What is your postcode? ", async (answer) => {
   };
 
   const stopIDsJSON = await getCloseStopIDS(postcodeLocation);
-  const stopIDs = sortPostcodeData(stopIDsJSON);
+  const stopIDs = sortBusStopData(stopIDsJSON);
 
-  console.log(stopIDs);
+  console.log(`Logging data for these stop ids: ${stopIDs}`);
+
+  for (const stop of stopIDs) {
+    const busInfo = await getBusInfoFor(stop.id);
+    logBusArrivalTimes(busInfo);
+  }
+
   rl.close();
 });
 
