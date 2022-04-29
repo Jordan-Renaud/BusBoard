@@ -33,6 +33,15 @@ async function getPostcodeData(postcode) {
   return postcodeJSON.json();
 }
 
+async function getCloseStopIDS(coords) {
+  const lon = coords.longitude;
+  const lat = coords.latitude;
+  const stopsIdAPI = await fetch(
+    `https://api.tfl.gov.uk/StopPoint/?lat=${lat}&lon=${lon}&stopTypes=NaptanPublicBusCoachTram&radius=500`
+  );
+  return stopsIdAPI.json();
+}
+
 const rl = readLine.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -48,7 +57,9 @@ rl.question("What is your postcode? ", async (answer) => {
     latitude: postcodeData.result.latitude,
   };
 
-  console.log(postcodeLocation);
+  const stopIDS = await getCloseStopIDS(postcodeLocation);
+
+  console.log(stopIDS);
   rl.close();
 });
 
