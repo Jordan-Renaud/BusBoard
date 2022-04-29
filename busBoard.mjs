@@ -57,9 +57,10 @@ rl.question("What is your postcode? ", async (answer) => {
     latitude: postcodeData.result.latitude,
   };
 
-  const stopIDS = await getCloseStopIDS(postcodeLocation);
+  const stopIDsJSON = await getCloseStopIDS(postcodeLocation);
 
-  console.log(stopIDS);
+  console.log(stopIDsJSON);
+
   rl.close();
 });
 
