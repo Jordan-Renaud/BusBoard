@@ -30,9 +30,7 @@ function logBusArrivalTimes(busInfo) {
 async function getPostcodeData(postcode) {
   const urlForPostCodeRequest = `https://api.postcodes.io/postcodes/${postcode}`;
   const input = await fetch(urlForPostCodeRequest);
-  const postcodeData = await input.json();
-
-  return postcodeData;
+  return input.json();
 }
 
 const rl = readLine.createInterface({
@@ -40,10 +38,10 @@ const rl = readLine.createInterface({
   output: process.stdout,
 });
 
-rl.question("What is your postcode? ", function (answer) {
+rl.question("What is your postcode? ", async (answer) => {
   //TODO: potentially do some error handling here
   const postcode = answer.toLocaleUpperCase().trim();
-  const postcodeData = getPostcodeData(postcode);
+  const postcodeData = await getPostcodeData(postcode);
 
   const postcodeLocation = {
     longitude: postcodeData.result.longitude,
