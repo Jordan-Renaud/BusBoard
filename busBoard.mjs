@@ -29,8 +29,8 @@ function logBusArrivalTimes(busInfo) {
 
 async function getPostcodeData(postcode) {
   const urlForPostCodeRequest = `https://api.postcodes.io/postcodes/${postcode}`;
-  const input = await fetch(urlForPostCodeRequest);
-  return input.json();
+  const postcodeJSON = await fetch(urlForPostCodeRequest);
+  return postcodeJSON.json();
 }
 
 const rl = readLine.createInterface({
