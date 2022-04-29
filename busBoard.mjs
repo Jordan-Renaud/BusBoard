@@ -30,7 +30,7 @@ function logBusArrivalTimes(busInfo) {
 async function getPostcodeData(postcode) {
   const urlForPostCodeRequest = `https://api.postcodes.io/postcodes/${postcode}`;
   const postcodeJSON = await fetch(urlForPostCodeRequest);
-  return postcodeJSON.json();
+  return await postcodeJSON.json();
 }
 
 async function getCloseStopIDS(coords) {
@@ -39,7 +39,14 @@ async function getCloseStopIDS(coords) {
   const stopsIdAPI = await fetch(
     `https://api.tfl.gov.uk/StopPoint/?lat=${lat}&lon=${lon}&stopTypes=NaptanPublicBusCoachTram&radius=500`
   );
-  return stopsIdAPI.json();
+  return await stopsIdAPI.json();
+}
+
+function sortPostcodeData(postcodeJSON) {
+  const stopIDs = postcodeJSON.stopPoints;
+  stopIDs.forEach((stop) => console.log(stop.naptanId));
+
+  return "STOP Id information here";
 }
 
 const rl = readLine.createInterface({
@@ -58,9 +65,9 @@ rl.question("What is your postcode? ", async (answer) => {
   };
 
   const stopIDsJSON = await getCloseStopIDS(postcodeLocation);
+  const stopIDs = sortPostcodeData(stopIDsJSON);
 
-  console.log(stopIDsJSON);
-
+  console.log(stopIDs);
   rl.close();
 });
 
