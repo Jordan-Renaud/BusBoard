@@ -71,20 +71,28 @@ rl.question("What is your postcode? ", async (answer) => {
   const postcode = answer.toLocaleUpperCase().trim();
   const postcodeData = await getPostcodeData(postcode);
 
+  //if postcode data is good, continue on.
+  //Else prompt use to try again.
+  //if it still doesn't work quit with letting user know the reason
   const postcodeLocation = {
     longitude: postcodeData.result.longitude,
     latitude: postcodeData.result.latitude,
   };
 
   const stopIDsJSON = await getCloseStopIDS(postcodeLocation);
+  //if tfl data is good, continue on.
+  //TODO: if not good, do what?
   const stopIDs = sortBusStopData(stopIDsJSON);
 
+  //TODO: do we need this for the user?
   console.log(
     `\nLogging data for these stop ids: ${stopIDs[0].id}, ${stopIDs[1].id}`
   );
 
   for (const stop of stopIDs) {
     const busInfo = await getBusInfoFor(stop.id);
+    //if tfl data is good, continue on.
+    //TODO: if not good, do what?
     console.log(`\n\nBus times for stop: ${busInfo[0].stationName}\n`);
     logBusArrivalTimes(busInfo);
   }
@@ -94,18 +102,7 @@ rl.question("What is your postcode? ", async (answer) => {
 
 //TODO: actually log out bus times ✅
 //TODO: validate the postcode
+//TODO: validate the bus stops - what if it returns an empty array
 
 //TODO: Fix crashing if theres no bus stops
 //TODO: winston library
-//TODO:
-
-//get users input for postcode
-//remove any spaces + captilise it
-//get long and lat
-
-//url = api.postcodes.io/postcodes/{postcode}
-//validate => if status 404 then inform user
-//retrieve longitude + latitude
-//coords for testing = lat = 51.55411 long = -0.292968
-// url for bus stops within long + lat = https://api.tfl.gov.uk/StopPoint/?lat={lat}&lon={lon}&stopTypes={stopTypes}[&radius]
-//stop typpes = look for NaptanId watch for children (stop on either side of the road)
