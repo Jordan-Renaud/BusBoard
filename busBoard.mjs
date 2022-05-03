@@ -4,15 +4,14 @@ import readLine from "readline";
 const stopID = "490008660N";
 
 async function getBusInfoFor(stopID) {
-  const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals`;
+  const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals?app_key=5716904db8c14735b9a633fd6523ee11`;
   const response = await fetch(url);
   const busInfo = await response.json();
 
-  return busInfo;
+  return await busInfo;
 }
 
 function logBusArrivalTimes(busInfo) {
-  console.log(busInfo);
   const arrivals = busInfo;
 
   arrivals.sort((a, b) => a.timeToStation - b.timeToStation);
@@ -59,7 +58,6 @@ function sortBusStopData(postcodeJSON) {
   busStopInfo.sort((a, b) => {
     return a.distance - b.distance;
   });
-
   return busStopInfo.slice(0, 2);
 }
 
@@ -81,15 +79,25 @@ rl.question("What is your postcode? ", async (answer) => {
   const stopIDsJSON = await getCloseStopIDS(postcodeLocation);
   const stopIDs = sortBusStopData(stopIDsJSON);
 
-  console.log(`Logging data for these stop ids: ${stopIDs}`);
+  console.log(
+    `\nLogging data for these stop ids: ${stopIDs[0].id}, ${stopIDs[1].id}`
+  );
 
   for (const stop of stopIDs) {
     const busInfo = await getBusInfoFor(stop.id);
+    console.log(`\n\nBus times for stop: ${busInfo[0].stationName}\n`);
     logBusArrivalTimes(busInfo);
   }
 
   rl.close();
 });
+
+//TODO: actually log out bus times ✅
+//TODO: validate the postcode
+
+//TODO: Fix crashing if theres no bus stops
+//TODO: winston library
+//TODO:
 
 //get users input for postcode
 //remove any spaces + captilise it
