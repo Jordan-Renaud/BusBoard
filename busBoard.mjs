@@ -3,47 +3,63 @@ import promptFn from "prompt-sync";
 
 const prompt = promptFn();
 
-let postcodeJSON;
-let isValidPostcode = false;
+async function getAndSetPostcodeCoords() {
+  let postcodeJSON;
+  let isValidPostcode = false;
 
-while (!isValidPostcode) {
-  let postcodeResponse;
+  while (!isValidPostcode) {
+    let postcodeResponse;
+    const postcode = prompt("Please input a London postcode: ");
 
-  const postcode = prompt("Please input a London postcode: ");
-  try {
-    const url = `https://api.postcodes.io/postcodes/${postcode}`;
-    postcodeResponse = await fetch(url);
-  } catch (error) {
-    console.log("Sorry, there seems to be an issue with internet connectivity");
-    //TODO: winston
-    throw error;
-  }
-
-  try {
-    postcodeJSON = await postcodeResponse.json();
-    if (postcodeJSON.status === 404) {
-      throw new Error(`Postcode ${postcode} is not valid`);
+    try {
+      const url = `https://api.postcodes.io/postcodes/${postcode}`;
+      postcodeResponse = await fetch(url);
+    } catch (error) {
+      console.log(
+        "Sorry, there seems to be an issue with internet connectivity"
+      );
+      //TODO: winston
+      throw error;
     }
-  } catch (error) {
-    console.log(`Postcode '${postcode}' is not valid. Please try again.`);
-    continue;
+
+    try {
+      postcodeJSON = await postcodeResponse.json();
+      if (postcodeJSON.status === 404) {
+        throw new Error(`Postcode ${postcode} is not valid`);
+      }
+    } catch (error) {
+      console.log(`Postcode '${postcode}' is not valid. Please try again.`);
+      continue;
+    }
+
+    try {
+      if (postcodeJSON.result.region !== "London") {
+        throw new Error(`Postcode ${postcode} is a London postcode`);
+      }
+    } catch (error) {
+      console.log(
+        `Postcode '${postcode}' is not a London postcode. Please try again.`
+      );
+      continue;
+    }
+    isValidPostcode = true;
   }
 
-  try {
-    if (postcodeJSON.result.region !== "London") {
-      throw new Error(`Postcode ${postcode} is a London postcode`);
-    }
-  } catch (error) {
-    console.log(
-      `Postcode '${postcode}' is not a London postcode. Please try again.`
-    );
-    continue;
-  }
-  isValidPostcode = true;
+  return getCoordsFrom(postcodeJSON);
 }
 
-//TODO: sucess code for api
-//TODO: check for region
+//helper functions
+function getCoordsFrom(postcodeJSON) {
+  const postcodeLocation = {
+    longitude: postcodeJSON.result.longitude,
+    latitude: postcodeJSON.result.latitude,
+  };
+  return postcodeLocation;
+}
+
+const coords = await getAndSetPostcodeCoords();
+console.log(coords);
+
 //return true
 //TODO:
 //TODO:
@@ -81,7 +97,6 @@ async function getPostcodeData(postcode) {
   return await postcodeJSON.json();
 }
 
-edxxxxx;
 // async function getCloseStopIDS(coords) {
 //   const lon = coords.longitude;
 //   const lat = coords.latitude;
