@@ -2,6 +2,10 @@ import fetch from "node-fetch";
 import promptFn from "prompt-sync";
 
 const prompt = promptFn();
+const postcodeCoords = await getAndSetPostcodeCoords();
+const closeStopIDs = await getAndSetCloseStopIDsFor(postcodeCoords);
+
+console.log(closeStopIDs);
 
 async function getAndSetPostcodeCoords() {
   let postcodeJSON;
@@ -48,6 +52,30 @@ async function getAndSetPostcodeCoords() {
   return getCoordsFrom(postcodeJSON);
 }
 
+async function getAndSetCloseStopIDsFor(coords) {
+  let stopIDsResponse = [];
+  let stopIDsJSON = [];
+
+  try {
+    const url = `https://api.tfl.gov.uk/StopPoint/?lat=${coords.latitude}&lon=${coords.longitude}&stopTypes=NaptanPublicBusCoachTram&radius=500`;
+    stopIDsResponse = await fetch(url);
+  } catch (error) {
+    console.log("Sorry, there seems to be an issue with internet connectivity");
+    throw error;
+  }
+
+  try {
+    stopIDsJSON = await stopIDsResponse.json();
+    if (stopIDsJSON.stopPoints.length === 0) {
+      throw new Error(`Sorry, there are no bus stops within 500m.`);
+    }
+  } catch (error) {
+    console.log(`no bus stops within 500m.`);
+  }
+
+  return getAndSortCloseSopIdsFrom(stopIDsJSON);
+}
+
 //helper functions
 function getCoordsFrom(postcodeJSON) {
   const postcodeLocation = {
@@ -57,13 +85,22 @@ function getCoordsFrom(postcodeJSON) {
   return postcodeLocation;
 }
 
-const coords = await getAndSetPostcodeCoords();
-console.log(coords);
+function getAndSortCloseSopIdsFrom(stopIDsJSON) {
+  let stopIDs = [];
+  const rawStopIDs = stopIDsJSON.stopPoints;
 
-//return true
-//TODO:
-//TODO:
-//TODO:
+  rawStopIDs.forEach((stop) => {
+    stopIDs.push({
+      id: stop.naptanId,
+      distance: Math.floor(stop.distance),
+    });
+  });
+
+  stopIDs.sort((a, b) => {
+    return a.distance - b.distance;
+  });
+  return stopIDs.slice(0, 2);
+}
 
 // async function getBusInfoFor(stopID) {
 //   const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals?app_key=5716904db8c14735b9a633fd6523ee11`;
