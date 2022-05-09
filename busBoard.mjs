@@ -5,7 +5,9 @@ const prompt = promptFn();
 const postcodeCoords = await getAndSetPostcodeCoords();
 const closeStopIDs = await getAndSetCloseStopIDsFor(postcodeCoords);
 
-console.log(closeStopIDs);
+closeStopIDs.forEach((stopID) => {
+  getAndLogBusInfoFor(stopID.id);
+});
 
 async function getAndSetPostcodeCoords() {
   let postcodeJSON;
@@ -76,6 +78,21 @@ async function getAndSetCloseStopIDsFor(coords) {
   return getAndSortCloseSopIdsFrom(stopIDsJSON);
 }
 
+async function getAndLogBusInfoFor(stopID) {
+  const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals?app_key=5716904db8c14735b9a633fd6523ee11`;
+  try {
+    const busInfoResponse = await fetch(url);
+    const busInfo = await busInfoResponse.json();
+
+    if (busInfo.length <= 0) {
+      throw new Error(`Sorry, there are no buses arriving at this stop.`);
+    }
+    logBusArrivalTimes(busInfo);
+  } catch (error) {
+    console.log(`No buses arriving at this stop, ${stopID}.`);
+  }
+}
+
 //helper functions
 function getCoordsFrom(postcodeJSON) {
   const postcodeLocation = {
@@ -102,103 +119,20 @@ function getAndSortCloseSopIdsFrom(stopIDsJSON) {
   return stopIDs.slice(0, 2);
 }
 
-// async function getBusInfoFor(stopID) {
-//   const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals?app_key=5716904db8c14735b9a633fd6523ee11`;
-//
-//   const busInfo = await response.json();
+function logBusArrivalTimes(busInfo) {
+  const arrivals = busInfo;
 
-//   return await busInfo;
-// }
+  arrivals.sort((a, b) => a.timeToStation - b.timeToStation);
 
-// function logBusArrivalTimes(busInfo) {
-//   const arrivals = busInfo;
+  arrivals.forEach((busArrival) => {
+    const minutesUntilBusArrives = Math.floor(busArrival.timeToStation / 60);
 
-//   arrivals.sort((a, b) => a.timeToStation - b.timeToStation);
-
-//   arrivals.forEach((busArrival) => {
-//     const minutesUntilBusArrives = Math.floor(busArrival.timeToStation / 60);
-
-//     if (minutesUntilBusArrives === 0) {
-//       console.log(`Bus to ${busArrival.destinationName} is due.`);
-//     } else {
-//       console.log(
-//         `Bus to ${busArrival.destinationName} arriving in ${minutesUntilBusArrives} minutes.`
-//       );
-//     }
-//   });
-// }
-
-async function getPostcodeData(postcode) {
-  const urlForPostCodeRequest = `https://api.postcodes.io/postcodes/${postcode}`;
-  const postcodeJSON = await fetch(urlForPostCodeRequest);
-  return await postcodeJSON.json();
+    if (minutesUntilBusArrives === 0) {
+      console.log(`Bus to ${busArrival.destinationName} is due.`);
+    } else {
+      console.log(
+        `Bus to ${busArrival.destinationName} arriving in ${minutesUntilBusArrives} minutes.`
+      );
+    }
+  });
 }
-
-// async function getCloseStopIDS(coords) {
-//   const lon = coords.longitude;
-//   const lat = coords.latitude;
-//   const stopsIdAPI = await fetch(
-//     `https://api.tfl.gov.uk/StopPoint/?lat=${lat}&lon=${lon}&stopTypes=NaptanPublicBusCoachTram&radius=500`
-//   );
-//   return await stopsIdAPI.json();
-// }
-
-// function sortBusStopData(postcodeJSON) {
-//   const stopIDs = postcodeJSON.stopPoints;
-//   const busStopInfo = [];
-
-//   stopIDs.forEach((stop) => {
-//     busStopInfo.push({
-//       id: stop.naptanId,
-//       distance: Math.floor(stop.distance),
-//     });
-//   });
-
-//   busStopInfo.sort((a, b) => {
-//     return a.distance - b.distance;
-//   });
-//   return busStopInfo.slice(0, 2);
-// }
-
-// let userPostcode;
-
-// rl.question("What is your postcode? ", async (answer) => {
-//   //TODO: potentially do some error handling here
-//   const postcode = answer.toLocaleUpperCase().trim();
-//   const postcodeData = await getPostcodeData(postcode);
-
-//   //if postcode data is good, continue on.
-//   //Else prompt user to try again.
-//   //if it still doesn't work quit with letting user know the reason
-//   const postcodeLocation = {
-//     longitude: postcodeData.result.longitude,
-//     latitude: postcodeData.result.latitude,
-//   };
-
-//   const stopIDsJSON = await getCloseStopIDS(postcodeLocation);
-//   //if tfl data is good, continue on.
-//   //TODO: if not good, do what?
-//   const stopIDs = sortBusStopData(stopIDsJSON);
-
-//   //TODO: do we need this for the user?
-//   console.log(
-//     `\nLogging data for these stop ids: ${stopIDs[0].id}, ${stopIDs[1].id}`
-//   );
-
-//   for (const stop of stopIDs) {
-//     const busInfo = await getBusInfoFor(stop.id);
-//     //if tfl data is good, continue on.
-//     //TODO: if not good, do what?
-//     console.log(`\n\nBus times for stop: ${busInfo[0].stationName}\n`);
-//     logBusArrivalTimes(busInfo);
-//   }
-
-//   rl.close();
-// });
-
-// //TODO: actually log out bus times ✅
-// //TODO: validate the postcode ✅
-// //TODO: validate the bus stops - what if it returns an empty array
-
-// //TODO: Fix crashing if theres no bus stops
-// //TODO: winston library
