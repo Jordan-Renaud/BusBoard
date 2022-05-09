@@ -1,5 +1,13 @@
 import fetch from "node-fetch";
 import promptFn from "prompt-sync";
+import winston from "winston";
+
+const logger = winston.createLogger({
+  transports: [
+    new winston.transports.Console(),
+    new winston.transports.File({ filename: "combined.log" }),
+  ],
+});
 
 const prompt = promptFn();
 const postcodeCoords = await getAndSetPostcodeCoords();
@@ -21,6 +29,9 @@ async function getAndSetPostcodeCoords() {
       const url = `https://api.postcodes.io/postcodes/${postcode}`;
       postcodeResponse = await fetch(url);
     } catch (error) {
+      logger.error(
+        `Fetch failed attempting to access https://api.postcodes.io/postcodes/${postcode}`
+      );
       console.log(
         "Sorry, there seems to be an issue with internet connectivity"
       );
@@ -34,6 +45,7 @@ async function getAndSetPostcodeCoords() {
         throw new Error(`Postcode ${postcode} is not valid`);
       }
     } catch (error) {
+      logger.error(`Postcode provided not valid. Postcode: ${postcode}`);
       console.log(`Postcode '${postcode}' is not valid. Please try again.`);
       continue;
     }
@@ -43,6 +55,9 @@ async function getAndSetPostcodeCoords() {
         throw new Error(`Postcode ${postcode} is a London postcode`);
       }
     } catch (error) {
+      logger.error(
+        `User inputed a non London postcode. Postcode provided: ${postcode}`
+      );
       console.log(
         `Postcode '${postcode}' is not a London postcode. Please try again.`
       );
@@ -62,6 +77,9 @@ async function getAndSetCloseStopIDsFor(coords) {
     const url = `https://api.tfl.gov.uk/StopPoint/?lat=${coords.latitude}&lon=${coords.longitude}&stopTypes=NaptanPublicBusCoachTram&radius=500`;
     stopIDsResponse = await fetch(url);
   } catch (error) {
+    logger.error(
+      `Did not receive a response from api url: ${`https://api.tfl.gov.uk/StopPoint/?lat=${coords.latitude}&lon=${coords.longitude}&stopTypes=NaptanPublicBusCoachTram&radius=500`}`
+    );
     console.log("Sorry, there seems to be an issue with internet connectivity");
     throw error;
   }
@@ -72,6 +90,7 @@ async function getAndSetCloseStopIDsFor(coords) {
       throw new Error(`Sorry, there are no bus stops within 500m.`);
     }
   } catch (error) {
+    logger.error(`Unable to find a bus stop within 500m of ${coords}`);
     console.log(`no bus stops within 500m.`);
   }
 
@@ -89,6 +108,7 @@ async function getAndLogBusInfoFor(stopID) {
     }
     logBusArrivalTimes(busInfo);
   } catch (error) {
+    logger.error(`No buses arriving at this stop, ${stopID}`);
     console.log(`No buses arriving at this stop, ${stopID}.`);
   }
 }
@@ -136,3 +156,6 @@ function logBusArrivalTimes(busInfo) {
     }
   });
 }
+
+//TODO: fix issue with no buses arriving at a stop.
+//TODO: add stop name and nice layout for user.
