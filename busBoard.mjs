@@ -12,6 +12,7 @@ const logger = winston.createLogger({
 const prompt = promptFn();
 const postcodeCoords = await getAndSetPostcodeCoords();
 const closeStopIDs = await getAndSetCloseStopIDsFor(postcodeCoords);
+console.log(closeStopIDs);
 
 closeStopIDs.forEach((stopID) => {
   getAndLogBusInfoFor(stopID.id);
@@ -99,18 +100,20 @@ async function getAndSetCloseStopIDsFor(coords) {
 
 async function getAndLogBusInfoFor(stopID) {
   const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals?app_key=5716904db8c14735b9a633fd6523ee11`;
+  let busInfo;
   try {
     const busInfoResponse = await fetch(url);
-    const busInfo = await busInfoResponse.json();
+    busInfo = await busInfoResponse.json();
 
     if (busInfo.length <= 0) {
       throw new Error(`Sorry, there are no buses arriving at this stop.`);
     }
-    logBusArrivalTimes(busInfo);
   } catch (error) {
     logger.error(`No buses arriving at this stop, ${stopID}`);
     console.log(`No buses arriving at this stop, ${stopID}.`);
   }
+
+  logBusArrivalTimes(busInfo);
 }
 
 //helper functions
@@ -142,20 +145,23 @@ function getAndSortCloseSopIdsFrom(stopIDsJSON) {
 function logBusArrivalTimes(busInfo) {
   const arrivals = busInfo;
 
+  console.log(
+    `\n\nBus arrivals for stop: ${arrivals[0].stationName}, ${arrivals[0].direction}.\n`
+  );
   arrivals.sort((a, b) => a.timeToStation - b.timeToStation);
 
   arrivals.forEach((busArrival) => {
     const minutesUntilBusArrives = Math.floor(busArrival.timeToStation / 60);
 
     if (minutesUntilBusArrives === 0) {
-      console.log(`Bus to ${busArrival.destinationName} is due.`);
+      console.log(`\tBus to ${busArrival.destinationName} is due.`);
     } else {
       console.log(
-        `Bus to ${busArrival.destinationName} arriving in ${minutesUntilBusArrives} minutes.`
+        `\tBus to ${busArrival.destinationName} arriving in ${minutesUntilBusArrives} minutes.`
       );
     }
   });
 }
 
 //TODO: fix issue with no buses arriving at a stop.
-//TODO: add stop name and nice layout for user.
+//TODO: whats up with southall?
