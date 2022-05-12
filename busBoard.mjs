@@ -10,15 +10,28 @@ const logger = winston.createLogger({
 });
 
 const prompt = promptFn();
-const postcodeCoords = await getAndSetPostcodeCoords();
-const closeStopIDs = await getAndSetCloseStopIDsFor(postcodeCoords);
-console.log(closeStopIDs);
+const postcodeCoords = await getPostcodeCoords();
+const sortedStopIDs = await getSortedStopIDsFor(postcodeCoords);
 
-closeStopIDs.forEach((stopID) => {
-  getAndLogBusInfoFor(stopID.id);
-});
+//console.log("postcode coords: ", postcodeCoords);
+//console.log("close stop ids:", sortedStopIDs);
 
-async function getAndSetPostcodeCoords() {
+let busStopsLogged = 1;
+
+for (
+  let i = 0;
+  busStopsLogged <= 2 || busStopsLogged > sortedStopIDs.length - 1;
+  i++
+) {
+  try {
+    await getAndLogBusInfoFor(sortedStopIDs[i].id);
+    busStopsLogged++;
+  } catch (error) {
+    logger.error(`No buses arriving at this stop, ${sortedStopIDs[i].id}`);
+  }
+}
+
+async function getPostcodeCoords() {
   let postcodeJSON;
   let isValidPostcode = false;
 
@@ -70,7 +83,7 @@ async function getAndSetPostcodeCoords() {
   return getCoordsFrom(postcodeJSON);
 }
 
-async function getAndSetCloseStopIDsFor(coords) {
+async function getSortedStopIDsFor(coords) {
   let stopIDsResponse = [];
   let stopIDsJSON = [];
 
@@ -99,20 +112,14 @@ async function getAndSetCloseStopIDsFor(coords) {
 }
 
 async function getAndLogBusInfoFor(stopID) {
-  const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals?app_key=5716904db8c14735b9a633fd6523ee11`;
-  let busInfo;
-  try {
-    const busInfoResponse = await fetch(url);
-    busInfo = await busInfoResponse.json();
+  const url = `https://api.tfl.gov.uk/StopPoint/${stopID}/Arrivals`;
 
-    if (busInfo.length <= 0) {
-      throw new Error(`Sorry, there are no buses arriving at this stop.`);
-    }
-  } catch (error) {
-    logger.error(`No buses arriving at this stop, ${stopID}`);
-    console.log(`No buses arriving at this stop, ${stopID}.`);
+  const busInfoResponse = await fetch(url);
+  const busInfo = await busInfoResponse.json();
+
+  if (busInfo.length <= 0) {
+    throw new Error(`This is not a valid stop.`);
   }
-
   logBusArrivalTimes(busInfo);
 }
 
@@ -139,7 +146,7 @@ function getAndSortCloseSopIdsFrom(stopIDsJSON) {
   stopIDs.sort((a, b) => {
     return a.distance - b.distance;
   });
-  return stopIDs.slice(0, 2);
+  return stopIDs;
 }
 
 function logBusArrivalTimes(busInfo) {
@@ -162,6 +169,3 @@ function logBusArrivalTimes(busInfo) {
     }
   });
 }
-
-//TODO: fix issue with no buses arriving at a stop.
-//TODO: whats up with southall?
